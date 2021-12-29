@@ -20,8 +20,11 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+function Rectangle(width, height) {
+  this.width = width;
+  this.height = height;
+  this.getArea = () => this.width * this.height;
+  return this;
 }
 
 
@@ -35,8 +38,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +54,10 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const obj = JSON.parse(json);
+  Object.setPrototypeOf(obj, proto);
+  return obj;
 }
 
 
@@ -110,33 +115,124 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+class NewBuilder {
+  constructor() {
+    this.selectorString = '';
+    this.elemHas = false;
+    this.idHas = false;
+    this.pseudoHas = false;
+    this.order = 0;
+    this.errorText = 'Element, id and pseudo-element should not occur more then one time inside the selector';
+    this.errorOrderText = 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element';
+  }
+
+  element(value) {
+    this.checThisKeyCount('elemHas');
+    this.checOrder(0);
+    this.selectorString += `${value}`;
+    return this;
+  }
+
+  id(value) {
+    this.checThisKeyCount('idHas');
+    this.checOrder(1);
+    this.selectorString += `#${value}`;
+    return this;
+  }
+
+  class(value) {
+    this.checOrder(2);
+    this.selectorString += `.${value}`;
+    return this;
+  }
+
+  attr(value) {
+    this.checOrder(3);
+    this.selectorString += `[${value}]`;
+    return this;
+  }
+
+  pseudoClass(value) {
+    this.checOrder(4);
+    this.selectorString += `:${value}`;
+    return this;
+  }
+
+  pseudoElement(value) {
+    this.checThisKeyCount('pseudoHas');
+    this.checOrder(5);
+    this.selectorString += `::${value}`;
+    return this;
+  }
+
+  stringify() {
+    return this.selectorString;
+  }
+
+  checThisKeyCount(key) {
+    if (this[key]) {
+      throw Error(this.errorText);
+    } else {
+      this[key] = true;
+    }
+  }
+
+  checOrder(order) {
+    if (this.order > order) {
+      throw Error(this.errorOrderText);
+    } else {
+      this.order = order;
+    }
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return this.checThisHasKey()
+      ? this.element(value)
+      : new NewBuilder().element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return this.checThisHasKey()
+      ? this.id(value)
+      : new NewBuilder().id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return this.checThisHasKey()
+      ? this.class(value)
+      : new NewBuilder().class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return this.checThisHasKey()
+      ? this.attr(value)
+      : new NewBuilder().attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return this.checThisHasKey()
+      ? this.pseudoClass(value)
+      : new NewBuilder().pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return this.checThisHasKey()
+      ? this.pseudoElement(value)
+      : new NewBuilder().pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return new NewBuilder().element(`${selector1.stringify()} ${combinator} ${selector2.stringify()}`);
+  },
+
+  stringify() {
+    return this.selectorString;
+  },
+
+  checThisHasKey(key = 'selectorString') {
+    return key in this;
   },
 };
 
